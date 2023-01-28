@@ -1,7 +1,4 @@
 let _ =
-  (* NOTE: Line breaks for when the text displayed before the command is executed does not break a line.*)
-  print_newline ();
-
   let args =
     (* NOTE: `Sys.argv` must contain a command name at the first. *)
     match Array.to_list Sys.argv with
