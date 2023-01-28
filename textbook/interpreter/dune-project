@@ -9,3 +9,5 @@
 (package
  (name miniml)
  (depends ocaml dune alcotest ppx_deriving menhir))
+
+(cram enable)
