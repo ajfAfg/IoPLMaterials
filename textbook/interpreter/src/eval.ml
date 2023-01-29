@@ -62,9 +62,15 @@ let rec eval_exp env = function
              env
       in
       eval_exp newenv exp2
-  | LetRecExp (id, para, exp1, exp2) ->
+  | LetRecExp (bindings, exp2) ->
       let dummyenv = ref Environment.empty in
-      let newenv = Environment.extend id (ProcV (para, exp1, dummyenv)) env in
+      let newenv =
+        bindings
+        |> List.map (fun (id, para, exp) -> (id, ProcV (para, exp, dummyenv)))
+        |> List.fold_left
+             (fun newenv (id, v) -> Environment.extend id v newenv)
+             env
+      in
       dummyenv := newenv;
       eval_exp newenv exp2
   | FunExp (id, exp) -> ProcV (id, exp, ref env)
@@ -103,9 +109,16 @@ let eval_program env = function
       in
       (* NOTE: Sort by declaration *)
       (List.rev defs, newenv)
-  | RecDecl (id, para, exp) ->
+  | RecDecl bindings ->
       let dummyenv = ref Environment.empty in
-      let v = ProcV (para, exp, dummyenv) in
-      let newenv = Environment.extend id v env in
+      let defs =
+        bindings
+        |> List.map (fun (id, para, exp) -> (id, ProcV (para, exp, dummyenv)))
+      in
+      let newenv =
+        List.fold_left
+          (fun newenv (id, v) -> Environment.extend id v newenv)
+          env defs
+      in
       dummyenv := newenv;
-      ([ (id, v) ], newenv)
+      (defs, newenv)

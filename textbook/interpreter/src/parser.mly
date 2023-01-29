@@ -22,17 +22,21 @@ let curry parameters expression =
 toplevel :
     e=Expr SEMISEMI { Exp e }
   | ds=Decls SEMISEMI { Decls ds }
-  | LET REC name=ValueName EQ FUN p=ID RARROW e=Expr SEMISEMI { RecDecl (name, p, e) }
+  | LET REC bs=LetRecBindings SEMISEMI { RecDecl bs }
   | { failwith "Syntax error" }
 
 Decls :
   | { [] }
   | LET bs=LetBindings ds=Decls { bs :: ds }
 
+LetRecBindings :
+  | name=ValueName EQ FUN p=ID RARROW e=Expr { [(name, p, e)] }
+  | name=ValueName EQ FUN p=ID RARROW e=Expr AND bs=LetRecBindings { (name, p, e) :: bs }
+
 Expr :
     e=IfExpr { e }
   | e=LetExpr { e }
-  | LET REC name=ValueName EQ FUN p=ID RARROW e1=Expr IN e2=Expr { LetRecExp (name, p, e1, e2) }
+  | LET REC bs=LetRecBindings IN e2=Expr { LetRecExp (bs, e2) }
   | e=LORExpr { e }
   | e=FunExpr { e }
   | e=DFunExpr { e }

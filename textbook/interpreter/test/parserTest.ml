@@ -71,12 +71,14 @@ let () =
               @@ program_of_string "dfun x1 x2 x3 -> 1;;");
           test_case
             "Recursive definitions are possible only in the form `let rec f = \
-             fun ...`"
+             fun ...` (c.f. Exercise 3.5.1)"
             `Quick (fun () ->
               (* NOTE: The purpose is to test parsing, so the function definition can be anything. *)
-              check (Syntax.RecDecl ("id", "x", Var "x"))
+              check (Syntax.RecDecl [ ("id", "x", Var "x") ])
               @@ program_of_string "let rec id = fun x -> x;;";
-              check (Syntax.Exp (Syntax.LetRecExp ("id", "x", Var "x", ILit 1)))
+              check
+                (Syntax.Exp
+                   (Syntax.LetRecExp ([ ("id", "x", Var "x") ], ILit 1)))
               @@ program_of_string "let rec id = fun x -> x in 1;;";
               check_raises "" Parser.Error (fun () ->
                   ignore @@ program_of_string "let rec id x = x;;");

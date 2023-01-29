@@ -9,7 +9,7 @@ type exp =
   | BinOp of binOp * exp * exp
   | IfExp of exp * exp * exp
   | LetExp of (id * exp) list * exp
-  | LetRecExp of id * id * exp * exp
+  | LetRecExp of (id * id * exp) list * exp
   | FunExp of id * exp
   | DFunExp of id * exp
   | AppExp of exp * exp
@@ -18,7 +18,7 @@ type exp =
 type program =
   | Exp of exp
   | Decls of (id * exp) list list
-  | RecDecl of id * id * exp
+  | RecDecl of (id * id * exp) list
 [@@deriving show]
 
 type tyvar = int [@@deriving show]
