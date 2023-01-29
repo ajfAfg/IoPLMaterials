@@ -40,11 +40,12 @@ LORExpr :
   | e=LANDExpr { e }
 
 LANDExpr :
-    l=LTExpr LAND r=LTExpr { BinOp (And, l, r) }
-  | e=LTExpr { e }
+    l=LANDExpr LAND r=CompExpr { BinOp (And, l, r) }
+  | e=CompExpr { e }
 
-LTExpr :
-    l=PExpr LT r=PExpr { BinOp (Lt, l, r) }
+CompExpr :
+  | l=CompExpr EQ r=PExpr { BinOp (Eq, l, r) }
+  | l=CompExpr LT r=PExpr { BinOp (Lt, l, r) }
   | e=PExpr { e }
 
 PExpr :

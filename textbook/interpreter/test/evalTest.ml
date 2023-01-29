@@ -23,7 +23,10 @@ let () =
           test_case "Integer multiplication is possible" `Quick (fun () ->
               check (IntV 0) @@ Eval.apply_prim Mult (IntV 0) (IntV 1);
               check (IntV 20) @@ Eval.apply_prim Mult (IntV (-2)) (IntV (-10)));
-          test_case "Integer comparison is possible" `Quick (fun () ->
+          test_case "*equal to* is possible for integer" `Quick (fun () ->
+              check (BoolV true) @@ Eval.apply_prim Eq (IntV 0) (IntV 0);
+              check (BoolV false) @@ Eval.apply_prim Eq (IntV 0) (IntV 1));
+          test_case "*less than* is possible for integer" `Quick (fun () ->
               check (BoolV true) @@ Eval.apply_prim Lt (IntV 0) (IntV 1);
               check (BoolV false) @@ Eval.apply_prim Lt (IntV 1) (IntV 0));
           test_case "Logical conjunction is possible" `Quick (fun () ->

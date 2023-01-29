@@ -28,6 +28,8 @@ let rec apply_prim op arg1 arg2 =
   | Plus, _, _ -> err "Both arguments must be integer: +"
   | Mult, IntV i1, IntV i2 -> IntV (i1 * i2)
   | Mult, _, _ -> err "Both arguments must be integer: *"
+  | Eq, IntV i1, IntV i2 -> BoolV (i1 = i2)
+  | Eq, _, _ -> err "Both arguments must be integer: ="
   | Lt, IntV i1, IntV i2 -> BoolV (i1 < i2)
   | Lt, _, _ -> err "Both arguments must be integer: <"
   | And, BoolV b1, BoolV b2 -> BoolV (b1 && b2)

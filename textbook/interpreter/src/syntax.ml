@@ -1,6 +1,6 @@
 (* ML interpreter / type reconstruction *)
 type id = string [@@deriving show]
-type binOp = Plus | Mult | Lt | And | Or [@@deriving show]
+type binOp = Plus | Mult | Eq | Lt | And | Or [@@deriving show]
 
 type exp =
   | Var of id
