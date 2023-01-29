@@ -8,7 +8,7 @@ let curry parameters expression =
 %token LPAREN RPAREN SEMISEMI
 %token PLUS MULT LT LAND LOR
 %token IF THEN ELSE TRUE FALSE
-%token LET IN EQ AND
+%token LET REC IN EQ AND
 %token RARROW FUN DFUN
 %token EOF
 
@@ -22,15 +22,21 @@ let curry parameters expression =
 toplevel :
     e=Expr SEMISEMI { Exp e }
   | ds=Decls SEMISEMI { Decls ds }
+  | LET REC bs=LetRecBindings SEMISEMI { RecDecl bs }
   | { failwith "Syntax error" }
 
 Decls :
   | { [] }
   | LET bs=LetBindings ds=Decls { bs :: ds }
 
+LetRecBindings :
+  | name=ValueName EQ FUN p=ID RARROW e=Expr { [(name, p, e)] }
+  | name=ValueName EQ FUN p=ID RARROW e=Expr AND bs=LetRecBindings { (name, p, e) :: bs }
+
 Expr :
     e=IfExpr { e }
   | e=LetExpr { e }
+  | LET REC bs=LetRecBindings IN e2=Expr { LetRecExp (bs, e2) }
   | e=LORExpr { e }
   | e=FunExpr { e }
   | e=DFunExpr { e }
@@ -40,11 +46,12 @@ LORExpr :
   | e=LANDExpr { e }
 
 LANDExpr :
-    l=LTExpr LAND r=LTExpr { BinOp (And, l, r) }
-  | e=LTExpr { e }
+    l=LANDExpr LAND r=CompExpr { BinOp (And, l, r) }
+  | e=CompExpr { e }
 
-LTExpr :
-    l=PExpr LT r=PExpr { BinOp (Lt, l, r) }
+CompExpr :
+  | l=CompExpr EQ r=PExpr { BinOp (Eq, l, r) }
+  | l=CompExpr LT r=PExpr { BinOp (Lt, l, r) }
   | e=PExpr { e }
 
 PExpr :

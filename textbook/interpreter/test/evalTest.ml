@@ -23,7 +23,10 @@ let () =
           test_case "Integer multiplication is possible" `Quick (fun () ->
               check (IntV 0) @@ Eval.apply_prim Mult (IntV 0) (IntV 1);
               check (IntV 20) @@ Eval.apply_prim Mult (IntV (-2)) (IntV (-10)));
-          test_case "Integer comparison is possible" `Quick (fun () ->
+          test_case "*equal to* is possible for integer" `Quick (fun () ->
+              check (BoolV true) @@ Eval.apply_prim Eq (IntV 0) (IntV 0);
+              check (BoolV false) @@ Eval.apply_prim Eq (IntV 0) (IntV 1));
+          test_case "*less than* is possible for integer" `Quick (fun () ->
               check (BoolV true) @@ Eval.apply_prim Lt (IntV 0) (IntV 1);
               check (BoolV false) @@ Eval.apply_prim Lt (IntV 1) (IntV 0));
           test_case "Logical conjunction is possible" `Quick (fun () ->
@@ -158,16 +161,66 @@ let () =
                               ( [ ("a", ILit 5) ],
                                 BinOp (Mult, Var "a", AppExp (Var "p", ILit 2))
                               ) ) )));
+          test_case
+            "Support recursive function expression (c.f. Exercise 3.5.1)" `Quick
+            (fun () ->
+              check (Eval.IntV 120)
+              @@ Eval.eval_exp Environment.empty
+                   (LetRecExp
+                      ( [
+                          ( "fact",
+                            "n",
+                            IfExp
+                              ( BinOp (Eq, Var "n", ILit 0),
+                                ILit 1,
+                                BinOp
+                                  ( Mult,
+                                    Var "n",
+                                    AppExp
+                                      ( Var "fact",
+                                        BinOp (Plus, Var "n", ILit (-1)) ) ) )
+                          );
+                        ],
+                        AppExp (Var "fact", ILit 5) )));
+          test_case
+            "Two or more recursive functions can be defined at the same time \
+             in expression (c.f. Exercise 3.5.2)"
+            `Quick (fun () ->
+              check (Eval.BoolV true)
+              @@ Eval.eval_exp Environment.empty
+                   (LetRecExp
+                      ( [
+                          ( "even",
+                            "n",
+                            IfExp
+                              ( BinOp (Eq, Var "n", ILit 0),
+                                BLit true,
+                                AppExp
+                                  (Var "odd", BinOp (Plus, Var "n", ILit (-1)))
+                              ) );
+                          ( "odd",
+                            "n",
+                            IfExp
+                              ( BinOp (Eq, Var "n", ILit 0),
+                                BLit false,
+                                AppExp
+                                  (Var "even", BinOp (Plus, Var "n", ILit (-1)))
+                              ) );
+                        ],
+                        AppExp (Var "even", ILit 2) )));
         ] );
       ( "eval_program",
-        let check = check environment "" in
+        let check_environment = check environment "" in
+        let check_exval = check exval "" in
         [
           test_case
             "When evaluating an equation, the environment remains the same"
             `Quick (fun () ->
-              check Environment.empty @@ snd
+              check_environment Environment.empty
+              @@ snd
               @@ Eval.eval_program Environment.empty (Syntax.Exp (ILit 1));
-              check Environment.empty @@ snd
+              check_environment Environment.empty
+              @@ snd
               @@ Eval.eval_program Environment.empty
                    (Syntax.Exp (LetExp ([ ("x", ILit 1) ], Var "x"))));
           test_case
@@ -182,7 +235,7 @@ let () =
                        [ ("y", BinOp (Plus, Var "x", ILit 1)) ];
                      ]
               in
-              check expected actual);
+              check_environment expected actual);
           test_case
             "Two or more variables can be declared at the same time (c.f. \
              Exercise 3.3.4)"
@@ -201,6 +254,63 @@ let () =
                 @@ Syntax.Decls
                      [ [ ("x", ILit 1); ("y", Var "x") ]; [ ("z", Var "y") ] ]
               in
-              check expected actual);
+              check_environment expected actual);
+          test_case
+            "Support recursive function declaration (c.f. Exercise 3.5.1)"
+            `Quick (fun () ->
+              (* NOTE:
+                 Since printing a recursive function does not stop
+                 (because it contains itself in the environment),
+                 test with the result of the recursive function computation. *)
+              let _, newenv =
+                Eval.eval_program Environment.empty
+                @@ Syntax.RecDecl
+                     [
+                       ( "fact",
+                         "n",
+                         IfExp
+                           ( BinOp (Eq, Var "n", ILit 0),
+                             ILit 1,
+                             BinOp
+                               ( Mult,
+                                 Var "n",
+                                 AppExp
+                                   (Var "fact", BinOp (Plus, Var "n", ILit (-1)))
+                               ) ) );
+                     ]
+              in
+              check_exval (Eval.IntV 120)
+              @@ Eval.eval_exp newenv (AppExp (Var "fact", ILit 5)));
+          test_case
+            "Two or more recursive functions can be declared at the same time \
+             (c.f. Exercise 3.5.2)"
+            `Quick (fun () ->
+              (* NOTE:
+                 Since printing a recursive function does not stop
+                 (because it contains itself in the environment),
+                 test with the result of the recursive function computation. *)
+              let _, newenv =
+                Eval.eval_program Environment.empty
+                @@ Syntax.RecDecl
+                     [
+                       ( "even",
+                         "n",
+                         IfExp
+                           ( BinOp (Eq, Var "n", ILit 0),
+                             BLit true,
+                             AppExp (Var "odd", BinOp (Plus, Var "n", ILit (-1)))
+                           ) );
+                       ( "odd",
+                         "n",
+                         IfExp
+                           ( BinOp (Eq, Var "n", ILit 0),
+                             BLit false,
+                             AppExp
+                               (Var "even", BinOp (Plus, Var "n", ILit (-1))) )
+                       );
+                     ]
+              in
+              check_exval (Eval.BoolV true)
+              @@ Eval.eval_exp newenv (AppExp (Var "even", ILit 2)));
         ] );
     ]

@@ -3,7 +3,7 @@ open Syntax
 type exval =
   | IntV of int
   | BoolV of bool
-  | ProcV of id * exp * dnval Environment.t
+  | ProcV of id * exp * dnval Environment.t ref
   | DProcV of id * exp
 [@@deriving show]
 
@@ -28,6 +28,8 @@ let rec apply_prim op arg1 arg2 =
   | Plus, _, _ -> err "Both arguments must be integer: +"
   | Mult, IntV i1, IntV i2 -> IntV (i1 * i2)
   | Mult, _, _ -> err "Both arguments must be integer: *"
+  | Eq, IntV i1, IntV i2 -> BoolV (i1 = i2)
+  | Eq, _, _ -> err "Both arguments must be integer: ="
   | Lt, IntV i1, IntV i2 -> BoolV (i1 < i2)
   | Lt, _, _ -> err "Both arguments must be integer: <"
   | And, BoolV b1, BoolV b2 -> BoolV (b1 && b2)
@@ -60,14 +62,25 @@ let rec eval_exp env = function
              env
       in
       eval_exp newenv exp2
-  | FunExp (id, exp) -> ProcV (id, exp, env)
+  | LetRecExp (bindings, exp2) ->
+      let dummyenv = ref Environment.empty in
+      let newenv =
+        bindings
+        |> List.map (fun (id, para, exp) -> (id, ProcV (para, exp, dummyenv)))
+        |> List.fold_left
+             (fun newenv (id, v) -> Environment.extend id v newenv)
+             env
+      in
+      dummyenv := newenv;
+      eval_exp newenv exp2
+  | FunExp (id, exp) -> ProcV (id, exp, ref env)
   | DFunExp (id, exp) -> DProcV (id, exp)
   | AppExp (exp1, exp2) -> (
       let funval = eval_exp env exp1 in
       let arg = eval_exp env exp2 in
       match funval with
       | ProcV (id, body, env') ->
-          let newenv = Environment.extend id arg env' in
+          let newenv = Environment.extend id arg !env' in
           eval_exp newenv body
       | DProcV (id, body) ->
           let newenv = Environment.extend id arg env in
@@ -96,3 +109,16 @@ let eval_program env = function
       in
       (* NOTE: Sort by declaration *)
       (List.rev defs, newenv)
+  | RecDecl bindings ->
+      let dummyenv = ref Environment.empty in
+      let defs =
+        bindings
+        |> List.map (fun (id, para, exp) -> (id, ProcV (para, exp, dummyenv)))
+      in
+      let newenv =
+        List.fold_left
+          (fun newenv (id, v) -> Environment.extend id v newenv)
+          env defs
+      in
+      dummyenv := newenv;
+      (defs, newenv)
