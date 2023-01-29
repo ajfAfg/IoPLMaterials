@@ -161,16 +161,37 @@ let () =
                               ( [ ("a", ILit 5) ],
                                 BinOp (Mult, Var "a", AppExp (Var "p", ILit 2))
                               ) ) )));
+          test_case
+            "Support recursive function expression (c.f. Exercise 3.5.1)" `Quick
+            (fun () ->
+              check (Eval.IntV 120)
+              @@ Eval.eval_exp Environment.empty
+                   (LetRecExp
+                      ( "fact",
+                        "n",
+                        IfExp
+                          ( BinOp (Eq, Var "n", ILit 0),
+                            ILit 1,
+                            BinOp
+                              ( Mult,
+                                Var "n",
+                                AppExp
+                                  (Var "fact", BinOp (Plus, Var "n", ILit (-1)))
+                              ) ),
+                        AppExp (Var "fact", ILit 5) )));
         ] );
       ( "eval_program",
-        let check = check environment "" in
+        let check_environment = check environment "" in
+        let check_exval = check exval "" in
         [
           test_case
             "When evaluating an equation, the environment remains the same"
             `Quick (fun () ->
-              check Environment.empty @@ snd
+              check_environment Environment.empty
+              @@ snd
               @@ Eval.eval_program Environment.empty (Syntax.Exp (ILit 1));
-              check Environment.empty @@ snd
+              check_environment Environment.empty
+              @@ snd
               @@ Eval.eval_program Environment.empty
                    (Syntax.Exp (LetExp ([ ("x", ILit 1) ], Var "x"))));
           test_case
@@ -185,7 +206,7 @@ let () =
                        [ ("y", BinOp (Plus, Var "x", ILit 1)) ];
                      ]
               in
-              check expected actual);
+              check_environment expected actual);
           test_case
             "Two or more variables can be declared at the same time (c.f. \
              Exercise 3.3.4)"
@@ -204,6 +225,26 @@ let () =
                 @@ Syntax.Decls
                      [ [ ("x", ILit 1); ("y", Var "x") ]; [ ("z", Var "y") ] ]
               in
-              check expected actual);
+              check_environment expected actual);
+          test_case
+            "Support recursive function declaration (c.f. Exercise 3.5.1)"
+            `Quick (fun () ->
+              let _, newenv =
+                Eval.eval_program Environment.empty
+                @@ Syntax.RecDecl
+                     ( "fact",
+                       "n",
+                       IfExp
+                         ( BinOp (Eq, Var "n", ILit 0),
+                           ILit 1,
+                           BinOp
+                             ( Mult,
+                               Var "n",
+                               AppExp
+                                 (Var "fact", BinOp (Plus, Var "n", ILit (-1)))
+                             ) ) )
+              in
+              check_exval (Eval.IntV 120)
+              @@ Eval.eval_exp newenv (AppExp (Var "fact", ILit 5)));
         ] );
     ]

@@ -8,7 +8,7 @@ let curry parameters expression =
 %token LPAREN RPAREN SEMISEMI
 %token PLUS MULT LT LAND LOR
 %token IF THEN ELSE TRUE FALSE
-%token LET IN EQ AND
+%token LET REC IN EQ AND
 %token RARROW FUN DFUN
 %token EOF
 
@@ -22,6 +22,7 @@ let curry parameters expression =
 toplevel :
     e=Expr SEMISEMI { Exp e }
   | ds=Decls SEMISEMI { Decls ds }
+  | LET REC name=ValueName EQ FUN p=ID RARROW e=Expr SEMISEMI { RecDecl (name, p, e) }
   | { failwith "Syntax error" }
 
 Decls :
@@ -31,6 +32,7 @@ Decls :
 Expr :
     e=IfExpr { e }
   | e=LetExpr { e }
+  | LET REC name=ValueName EQ FUN p=ID RARROW e1=Expr IN e2=Expr { LetRecExp (name, p, e1, e2) }
   | e=LORExpr { e }
   | e=FunExpr { e }
   | e=DFunExpr { e }
