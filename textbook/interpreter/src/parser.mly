@@ -56,16 +56,19 @@ toplevel :
   | { failwith "Syntax error" }
 
 Expr :
-  | n=ValueName { Var n }
-  | c=Constant { c }
-  | LPAREN e=Expr RPAREN { e }
-  | e1=Expr e2=Expr %prec APP { AppExp (e1, e2) }
+  | e=Expr_ { e }
+  | e1=Expr e2=Expr_ %prec APP { AppExp (e1, e2) }
   | e1=Expr op=BinOp e2=Expr { BinOp (op, e1, e2) }
   | IF e1=Expr THEN e2=Expr ELSE e3=Expr { IfExp (e1, e2, e3) }
   | FUN params=nonempty_list(ID) RARROW e=Expr { curry params e }
   | DFUN params=nonempty_list(ID) RARROW e=Expr { List.fold_right (fun x acc -> DFunExp (x, acc)) params e }
   | LET bs=LetBindings IN e=Expr { LetExp (bs, e) }
   | LET REC bs=LetRecBindings IN e2=Expr { LetRecExp (bs, e2) }
+
+Expr_ :
+  | n=ValueName { Var n }
+  | c=Constant { c }
+  | LPAREN e=Expr RPAREN { e }
 
 %inline ValueName :
   | i=ID { i }
