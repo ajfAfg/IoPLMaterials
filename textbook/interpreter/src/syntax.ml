@@ -15,12 +15,13 @@ type exp =
   | AppExp of exp * exp
 [@@deriving show]
 
-type program =
+type item =
   | Exp of exp
-  | Decls of (id * exp) list list
-  | RecDecl of (id * id * exp) list
+  | Def of (id * exp) list
+  | RecDef of (id * id * exp) list
 [@@deriving show]
 
+type program = item list [@@deriving show]
 type tyvar = int [@@deriving show]
 
 type ty = TyInt | TyBool | TyVar of tyvar | TyFun of ty * ty | TyList of ty
