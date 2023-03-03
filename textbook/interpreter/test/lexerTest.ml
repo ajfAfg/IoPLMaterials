@@ -1,7 +1,9 @@
 open Miniml
 
 let program = Syntax.show_program |> Fmt.of_to_string |> Alcotest.of_pp
-let program_of_string str = Parser.toplevel Lexer.main (Lexing.from_string str)
+
+let program_of_string str =
+  Parser.toplevel_input Lexer.main (Lexing.from_string str)
 
 let () =
   let open Alcotest in

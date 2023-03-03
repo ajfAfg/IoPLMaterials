@@ -4,7 +4,9 @@ let rec read_eval_print env =
   print_string "# ";
   flush stdout;
   try
-    let program = Parser.toplevel Lexer.main (Lexing.from_channel stdin) in
+    let program =
+      Parser.toplevel_input Lexer.main (Lexing.from_channel stdin)
+    in
     let _ =
       print_string "parsing done\n";
       flush stdout
