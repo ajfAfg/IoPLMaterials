@@ -33,6 +33,7 @@ rule main = parse
 | "||" { Parser.LOR }
 | "=" { Parser.EQ }
 | "->" { Parser.RARROW }
+| eof { Parser.EOF }
 
 | ['a'-'z'] ['a'-'z' '0'-'9' '_' '\'']*
     { let id = Lexing.lexeme lexbuf in
@@ -41,7 +42,6 @@ rule main = parse
       with
       _ -> Parser.ID id
      }
-| eof { exit 0 }
 
 and comment level = parse
 | "(*" { comment (level+1) lexbuf }
