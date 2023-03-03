@@ -87,38 +87,35 @@ let rec eval_exp env = function
           eval_exp newenv body
       | _ -> err "Non-function value is applied")
 
-let eval_program env = function
+let eval_item env = function
   | Exp e ->
       let v = eval_exp env e in
       ([ ("-", v) ], env)
-  | Decls decls ->
-      let defs, newenv =
+  | Def bindings ->
+      let bounds = bindings |> List.map (fun (id, e) -> (id, eval_exp env e)) in
+      let newenv =
         List.fold_left
-          (fun (defs, newenv) bindings ->
-            (* NOTE:
-               In the original, variables of the same name cannot be defined using `and`,
-               but are assumed to be definable here for simplicity. *)
-            let newdefs =
-              bindings |> List.map (fun (id, e) -> (id, eval_exp newenv e))
-            in
-            ( List.rev_append newdefs defs,
-              List.fold_left
-                (fun newenv (id, v) -> Environment.extend id v newenv)
-                newenv newdefs ))
-          ([], env) decls
+          (fun newenv (id, v) -> Environment.extend id v newenv)
+          env bounds
       in
-      (* NOTE: Sort by declaration *)
-      (List.rev defs, newenv)
-  | RecDecl bindings ->
+      (bounds, newenv)
+  | RecDef bindings ->
       let dummyenv = ref Environment.empty in
-      let defs =
+      let bounds =
         bindings
         |> List.map (fun (id, para, exp) -> (id, ProcV (para, exp, dummyenv)))
       in
       let newenv =
         List.fold_left
           (fun newenv (id, v) -> Environment.extend id v newenv)
-          env defs
+          env bounds
       in
       dummyenv := newenv;
-      (defs, newenv)
+      (bounds, newenv)
+
+let eval_program env items =
+  List.fold_left
+    (fun (bounds, newenv) item ->
+      let new_bounds, newenv = eval_item newenv item in
+      (List.append bounds new_bounds, newenv))
+    ([], env) items

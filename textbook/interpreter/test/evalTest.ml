@@ -218,22 +218,21 @@ let () =
             `Quick (fun () ->
               check_environment Environment.empty
               @@ snd
-              @@ Eval.eval_program Environment.empty (Syntax.Exp (ILit 1));
+              @@ Eval.eval_program Environment.empty [ Syntax.Exp (ILit 1) ];
               check_environment Environment.empty
               @@ snd
               @@ Eval.eval_program Environment.empty
-                   (Syntax.Exp (LetExp ([ ("x", ILit 1) ], Var "x"))));
+                   [ Syntax.Exp (LetExp ([ ("x", ILit 1) ], Var "x")) ]);
           test_case
             "Variables can be declared in sequence (c.f. Exercise 3.3.2)" `Quick
             (fun () ->
               let expected = init_env [ ("x", Eval.IntV 1); ("y", IntV 2) ] in
               let _, actual =
                 Eval.eval_program Environment.empty
-                @@ Syntax.Decls
-                     [
-                       [ ("x", ILit 1) ];
-                       [ ("y", BinOp (Plus, Var "x", ILit 1)) ];
-                     ]
+                @@ [
+                     Syntax.Def [ ("x", ILit 1) ];
+                     Syntax.Def [ ("y", BinOp (Plus, Var "x", ILit 1)) ];
+                   ]
               in
               check_environment expected actual);
           test_case
@@ -250,9 +249,12 @@ let () =
                   ]
               in
               let _, actual =
-                Eval.eval_program (init_env [ ("x", Eval.IntV 10) ])
-                @@ Syntax.Decls
-                     [ [ ("x", ILit 1); ("y", Var "x") ]; [ ("z", Var "y") ] ]
+                Eval.eval_program
+                  (init_env [ ("x", Eval.IntV 10) ])
+                  [
+                    Syntax.Def [ ("x", ILit 1); ("y", Var "x") ];
+                    Syntax.Def [ ("z", Var "y") ];
+                  ]
               in
               check_environment expected actual);
           test_case
@@ -264,20 +266,22 @@ let () =
                  test with the result of the recursive function computation. *)
               let _, newenv =
                 Eval.eval_program Environment.empty
-                @@ Syntax.RecDecl
-                     [
-                       ( "fact",
-                         "n",
-                         IfExp
-                           ( BinOp (Eq, Var "n", ILit 0),
-                             ILit 1,
-                             BinOp
-                               ( Mult,
-                                 Var "n",
-                                 AppExp
-                                   (Var "fact", BinOp (Plus, Var "n", ILit (-1)))
-                               ) ) );
-                     ]
+                @@ [
+                     Syntax.RecDef
+                       [
+                         ( "fact",
+                           "n",
+                           IfExp
+                             ( BinOp (Eq, Var "n", ILit 0),
+                               ILit 1,
+                               BinOp
+                                 ( Mult,
+                                   Var "n",
+                                   AppExp
+                                     ( Var "fact",
+                                       BinOp (Plus, Var "n", ILit (-1)) ) ) ) );
+                       ];
+                   ]
               in
               check_exval (Eval.IntV 120)
               @@ Eval.eval_exp newenv (AppExp (Var "fact", ILit 5)));
@@ -291,24 +295,27 @@ let () =
                  test with the result of the recursive function computation. *)
               let _, newenv =
                 Eval.eval_program Environment.empty
-                @@ Syntax.RecDecl
-                     [
-                       ( "even",
-                         "n",
-                         IfExp
-                           ( BinOp (Eq, Var "n", ILit 0),
-                             BLit true,
-                             AppExp (Var "odd", BinOp (Plus, Var "n", ILit (-1)))
-                           ) );
-                       ( "odd",
-                         "n",
-                         IfExp
-                           ( BinOp (Eq, Var "n", ILit 0),
-                             BLit false,
-                             AppExp
-                               (Var "even", BinOp (Plus, Var "n", ILit (-1))) )
-                       );
-                     ]
+                @@ [
+                     Syntax.RecDef
+                       [
+                         ( "even",
+                           "n",
+                           IfExp
+                             ( BinOp (Eq, Var "n", ILit 0),
+                               BLit true,
+                               AppExp
+                                 (Var "odd", BinOp (Plus, Var "n", ILit (-1)))
+                             ) );
+                         ( "odd",
+                           "n",
+                           IfExp
+                             ( BinOp (Eq, Var "n", ILit 0),
+                               BLit false,
+                               AppExp
+                                 (Var "even", BinOp (Plus, Var "n", ILit (-1)))
+                             ) );
+                       ];
+                   ]
               in
               check_exval (Eval.BoolV true)
               @@ Eval.eval_exp newenv (AppExp (Var "even", ILit 2)));

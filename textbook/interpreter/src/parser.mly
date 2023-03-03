@@ -45,15 +45,52 @@ let string_of_binop = function
 %nonassoc INTV ID TRUE FALSE LPAREN RPAREN SEMISEMI
 %nonassoc APP
 
-%start toplevel
-%type <Syntax.program> toplevel
+%start toplevel_input
+%type <Syntax.program> toplevel_input
+%start unit_implementation
+%type <Syntax.program> unit_implementation
 %%
 
-toplevel :
-  | e=Expr SEMISEMI { Exp e }
-  | ds=Decls SEMISEMI { Decls ds }
-  | LET REC bs=LetRecBindings SEMISEMI { RecDecl bs }
+// NOTE:
+// The entry point for REPL (c.f. https://v2.ocaml.org/manual/toplevel.html)
+toplevel_input :
+  | defs=nonempty_list(Definition) SEMISEMI
+      { defs }
+  | defs=nonempty_list(RecDefinition) SEMISEMI
+      { defs }
+  | e=Expr SEMISEMI
+      { [Exp e] }
   | { failwith "Syntax error" }
+
+// NOTE:
+// The entry point for the batch interpreter (c.f. https://v2.ocaml.org/manual/compunit.html)
+unit_implementation :
+  | items_option=option(Items) EOF
+      { match items_option with
+        | Some(items) -> items
+        | None -> [] }
+  | { failwith "Syntax error" }
+
+%inline Items :
+  // NOTE: To avoid conflicts, some `SEMISEMI` are omitted.
+  | x=Item1 xs=list(item=Item2 { item })
+      { x :: xs }
+
+%inline Item1 :
+  | def=Definition { def }
+  | def=RecDefinition { def }
+  | e=Expr { Exp e }
+
+%inline Item2 :
+  | def=Definition { def }
+  | def=RecDefinition { def }
+  | SEMISEMI e=Expr { Exp e }
+
+%inline Definition :
+  | LET bindings=LetBindings { Def bindings }
+
+%inline RecDefinition :
+  | LET REC bindings=LetRecBindings { RecDef bindings }
 
 Expr :
   | e=Expr_ { e }
@@ -100,7 +137,3 @@ LetRecBindings :
 
 %inline LetRecBinding :
   | x=ValueName EQ FUN param=ID RARROW e=Expr { (x, param, e) }
-
-Decls :
-  | { [] }
-  | LET bs=LetBindings ds=Decls { bs :: ds }

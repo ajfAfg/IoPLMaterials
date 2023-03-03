@@ -18,3 +18,5 @@ _site/
 .bundle/
 .vscode/
 _build/
+*.conflicts
+

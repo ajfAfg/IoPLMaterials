@@ -5,4 +5,3 @@ let f =
   addx
 in
 f 4
-;;

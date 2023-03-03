@@ -4,4 +4,4 @@ and odd = fun n -> if n = 0 then false else even (n + -1)
 ;;
 
 even 2;;
-odd 2;;
+odd 2
