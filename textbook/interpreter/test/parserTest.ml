@@ -84,5 +84,10 @@ let () =
                   ignore @@ program_of_string "let rec id x = x;;");
               check_raises "" Parser.Error (fun () ->
                   ignore @@ program_of_string "let rec id x = x in 1;;"));
+          test_case
+            "Variable bindings cannot be reduced from function application"
+            `Quick (fun () ->
+              check_raises "" Parser.Error (fun () ->
+                  ignore @@ program_of_string "id let foo = 1 in foo;;"));
         ] );
     ]
