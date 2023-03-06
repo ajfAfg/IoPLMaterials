@@ -114,8 +114,4 @@ let eval_item env = function
       (None, newenv)
 
 let eval_program env items =
-  List.fold_left
-    (fun (bounds, newenv) item ->
-      let new_bounds, newenv = eval_item newenv item in
-      (List.append bounds new_bounds, newenv))
-    ([], env) items
+  List.fold_left (fun env item -> snd @@ eval_item env item) env items

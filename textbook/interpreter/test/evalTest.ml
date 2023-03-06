@@ -217,17 +217,15 @@ let () =
             "When evaluating an equation, the environment remains the same"
             `Quick (fun () ->
               check_environment Environment.empty
-              @@ snd
               @@ Eval.eval_program Environment.empty [ Syntax.Exp (ILit 1) ];
               check_environment Environment.empty
-              @@ snd
               @@ Eval.eval_program Environment.empty
                    [ Syntax.Exp (LetExp ([ ("x", ILit 1) ], Var "x")) ]);
           test_case
             "Variables can be declared in sequence (c.f. Exercise 3.3.2)" `Quick
             (fun () ->
               let expected = init_env [ ("x", Eval.IntV 1); ("y", IntV 2) ] in
-              let _, actual =
+              let actual =
                 Eval.eval_program Environment.empty
                 @@ [
                      Syntax.Def [ ("x", ILit 1) ];
@@ -248,7 +246,7 @@ let () =
                     ("z", IntV 10);
                   ]
               in
-              let _, actual =
+              let actual =
                 Eval.eval_program
                   (init_env [ ("x", Eval.IntV 10) ])
                   [
@@ -264,7 +262,7 @@ let () =
                  Since printing a recursive function does not stop
                  (because it contains itself in the environment),
                  test with the result of the recursive function computation. *)
-              let _, newenv =
+              let newenv =
                 Eval.eval_program Environment.empty
                 @@ [
                      Syntax.RecDef
@@ -293,7 +291,7 @@ let () =
                  Since printing a recursive function does not stop
                  (because it contains itself in the environment),
                  test with the result of the recursive function computation. *)
-              let _, newenv =
+              let newenv =
                 Eval.eval_program Environment.empty
                 @@ [
                      Syntax.RecDef
