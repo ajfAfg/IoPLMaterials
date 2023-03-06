@@ -1,34 +1,29 @@
-open Eval
-
-let rec read_eval_print env =
+let rec read_eval_print' env =
   print_string "# ";
   flush stdout;
   try
     let program =
       Parser.toplevel_input Lexer.main (Lexing.from_channel stdin)
     in
-    let _ =
-      print_string "parsing done\n";
-      flush stdout
-    in
-    let defs, newenv = eval_program env program in
-    List.iter
-      (fun (id, v) -> Printf.printf "val %s = %s\n" id (string_of_exval v))
-      defs;
-    read_eval_print newenv
+    let results, newenv = PrettyEval.eval_program env program in
+    print_endline @@ PrettyEval.string_of_results results;
+    read_eval_print' newenv
   with exn ->
     Printf.printf "Fatal error: exception %s\n" (Printexc.to_string exn);
-    read_eval_print env
+    read_eval_print' env
 
-let initial_env =
-  List.fold_left
-    (fun env (id, exval) -> Environment.extend id exval env)
-    (snd @@ eval_program Environment.empty MyStdlib.program)
-    [
-      ("x", IntV 10);
-      ("v", IntV 5);
-      ("i", IntV 1);
-      ("ii", IntV 2);
-      ("iii", IntV 3);
-      ("iv", IntV 4);
-    ]
+let initial_program =
+  let open Syntax in
+  [
+    Def [ ("x", ILit 10) ];
+    Def [ ("v", ILit 5) ];
+    Def [ ("i", ILit 1) ];
+    Def [ ("ii", ILit 2) ];
+    Def [ ("iii", ILit 3) ];
+    Def [ ("iv", ILit 4) ];
+  ]
+
+let read_eval_print () =
+  MyStdlib.program @ initial_program
+  |> Eval.eval_program Environment.empty
+  |> read_eval_print'
