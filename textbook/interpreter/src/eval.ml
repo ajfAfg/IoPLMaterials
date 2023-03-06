@@ -90,7 +90,7 @@ let rec eval_exp env = function
 let eval_item env = function
   | Exp e ->
       let v = eval_exp env e in
-      ([ ("-", v) ], env)
+      (Some v, env)
   | Def bindings ->
       let bounds = bindings |> List.map (fun (id, e) -> (id, eval_exp env e)) in
       let newenv =
@@ -98,7 +98,7 @@ let eval_item env = function
           (fun newenv (id, v) -> Environment.extend id v newenv)
           env bounds
       in
-      (bounds, newenv)
+      (None, newenv)
   | RecDef bindings ->
       let dummyenv = ref Environment.empty in
       let bounds =
@@ -111,7 +111,7 @@ let eval_item env = function
           env bounds
       in
       dummyenv := newenv;
-      (bounds, newenv)
+      (None, newenv)
 
 let eval_program env items =
   List.fold_left
