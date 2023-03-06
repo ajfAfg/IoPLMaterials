@@ -209,6 +209,20 @@ let () =
                         ],
                         AppExp (Var "even", ILit 2) )));
         ] );
+      ( "eval_item",
+        [
+          test_case
+            "Variables cannot be bound several times in the same matching"
+            `Quick (fun () ->
+              try
+                ignore
+                @@ Eval.eval_item Environment.empty
+                     (Def [ ("x", ILit 1); ("x", ILit 2) ]);
+                fail "No exception"
+              with
+              | Eval.Error _ -> ignore pass
+              | _ -> fail "Unexpected exception");
+        ] );
       ( "eval_program",
         let check_environment = check environment "" in
         let check_exval = check exval "" in
