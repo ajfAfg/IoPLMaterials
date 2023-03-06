@@ -38,3 +38,8 @@ jobs:
       - run: opam exec -- dune build
 
       - run: opam exec -- dune runtest
+
+      - name: Check MiniML grammar for ambiguity
+        run: |
+          opam exec -- menhir --explain src/parser.mly || true
+          [ ! -s src/parser.conflicts ]
