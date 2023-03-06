@@ -60,6 +60,8 @@ toplevel_input :
       { defs }
   | e=Expr SEMISEMI
       { [Exp e] }
+  | EOF
+      { exit 0 }
   | { failwith "Syntax error" }
 
 // NOTE:

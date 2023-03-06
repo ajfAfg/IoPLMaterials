@@ -6,5 +6,5 @@ let _ =
     | _cmd :: args -> args
   in
   match args with
-  | [] -> Miniml.Cui.read_eval_print Miniml.Cui.initial_env
+  | [] -> Miniml.Cui.read_eval_print ()
   | filename :: _ -> Miniml.Batch.read_eval_print filename

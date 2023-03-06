@@ -13,15 +13,6 @@ exception Error of string
 
 let err s = raise (Error s)
 
-(* pretty printing *)
-let rec string_of_exval = function
-  | IntV i -> string_of_int i
-  | BoolV b -> string_of_bool b
-  | ProcV _ -> "<fun>"
-  | DProcV _ -> "<dfun>"
-
-let pp_val v = print_string (string_of_exval v)
-
 let rec apply_prim op arg1 arg2 =
   match (op, arg1, arg2) with
   | Plus, IntV i1, IntV i2 -> IntV (i1 + i2)
@@ -87,19 +78,29 @@ let rec eval_exp env = function
           eval_exp newenv body
       | _ -> err "Non-function value is applied")
 
+let raise_if_id_duplicates ids =
+  let ids' = List.sort_uniq compare ids in
+  match MyList.subtract ids ids' with
+  | [] -> ()
+  | id :: _ ->
+      err
+      @@ Printf.sprintf "Variable %s is bound several times in this matching" id
+
 let eval_item env = function
   | Exp e ->
       let v = eval_exp env e in
-      ([ ("-", v) ], env)
+      (Some v, env)
   | Def bindings ->
+      bindings |> List.map (fun (id, _) -> id) |> raise_if_id_duplicates;
       let bounds = bindings |> List.map (fun (id, e) -> (id, eval_exp env e)) in
       let newenv =
         List.fold_left
           (fun newenv (id, v) -> Environment.extend id v newenv)
           env bounds
       in
-      (bounds, newenv)
+      (None, newenv)
   | RecDef bindings ->
+      bindings |> List.map (fun (id, _, _) -> id) |> raise_if_id_duplicates;
       let dummyenv = ref Environment.empty in
       let bounds =
         bindings
@@ -111,11 +112,7 @@ let eval_item env = function
           env bounds
       in
       dummyenv := newenv;
-      (bounds, newenv)
+      (None, newenv)
 
 let eval_program env items =
-  List.fold_left
-    (fun (bounds, newenv) item ->
-      let new_bounds, newenv = eval_item newenv item in
-      (List.append bounds new_bounds, newenv))
-    ([], env) items
+  List.fold_left (fun env item -> snd @@ eval_item env item) env items
