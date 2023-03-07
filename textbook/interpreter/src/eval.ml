@@ -13,6 +13,12 @@ exception Error of string
 
 let err s = raise (Error s)
 
+let string_of_exval = function
+  | IntV i -> string_of_int i
+  | BoolV b -> string_of_bool b
+  | ProcV _ -> "<fun>"
+  | DProcV _ -> "<dfun>"
+
 let rec apply_prim op arg1 arg2 =
   match (op, arg1, arg2) with
   | Plus, IntV i1, IntV i2 -> IntV (i1 + i2)
