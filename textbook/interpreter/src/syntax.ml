@@ -24,5 +24,11 @@ type item =
 type program = item list [@@deriving show]
 type tyvar = int [@@deriving show]
 
-type ty = TyInt | TyBool | TyVar of tyvar | TyFun of ty * ty | TyList of ty
+type ty =
+  | TyInt
+  | TyBool
+  | TyVar of tyvar
+  | TyFun of ty * ty
+  | TyList of ty
+  | Dummy (* TODO: Type for an unimplemented expression *)
 [@@deriving show]

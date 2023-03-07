@@ -3,7 +3,7 @@ Definition introduction
 Exercise 3.3.1
   $ dune exec miniml exercise3-3-1.miniml.ml
   val x = 10
-  val - = 15
+  val - : int = 15
 
 Exercise 3.3.2
   $ dune exec miniml exercise3-3-2.miniml.ml
