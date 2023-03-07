@@ -10,9 +10,9 @@ Exercise 3.2.2
 
 Exercise 3.2.3
   $ dune exec miniml exercise3-2-3.miniml.ml
-  val - = true
-  val - = true
+  val - : bool = true
+  val - : bool = true
 
 Exercise 3.2.4
   $ dune exec miniml exercise3-2-4.miniml.ml
-  val - = 1
+  val - : int = 1
