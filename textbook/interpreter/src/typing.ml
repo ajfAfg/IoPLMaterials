@@ -150,6 +150,21 @@ let rec ty_exp tyenv = function
 
 let ty_item tyenv = function
   | Exp e ->
-      let _, ty = ty_exp tyenv e in
-      (Some ty, tyenv)
+      let subst, ty = ty_exp tyenv e in
+      (Some ty, Environment.map (subst_type subst) tyenv)
+  | Def bindings ->
+      let bound_types, subst =
+        bindings
+        |> List.map (fun (id, e) -> (id, ty_exp tyenv e))
+        |> List.fold_left
+             (fun (bound_types, subst) (id, (subst', ty)) ->
+               ((id, ty) :: bound_types, subst @ subst'))
+             ([], [])
+      in
+      let tyenv' =
+        List.fold_left
+          (fun tyenv' (id, ty) -> Environment.extend id ty tyenv')
+          tyenv bound_types
+      in
+      (None, Environment.map (subst_type subst) tyenv')
   | _ -> err "Not Implemented!"
