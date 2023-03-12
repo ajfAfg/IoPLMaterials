@@ -2,16 +2,16 @@ Function introduction
 
 Exercise 3.4.1
   $ dune exec miniml exercise3-4-1.miniml.ml
-  val - = 6
+  val - : int = 6
 
 Exercise 3.4.2
   $ dune exec miniml exercise3-4-2.miniml.ml
-  val - = 20
+  val - : int = 20
 
 Exercise 3.4.3
   $ dune exec miniml exercise3-4-3.miniml.ml
-  val - = 3
-  val - = 3
+  val - : int = 3
+  val - : int = 3
 
 Exercise 3.4.4
   $ dune exec miniml exercise3-4-4.miniml.ml
@@ -21,11 +21,11 @@ Exercise 3.4.4
 Exercise 3.4.5
   $ dune exec miniml exercise3-4-5.miniml.ml
   val - = 35
-  val - = 25
+  val - : int = 25
 
 Exercise 3.4.6
   $ dune exec miniml exercise3-4-6.miniml.ml
-  val - = 25
+  val - : int = 25
   val - = 25
   val - = 120
   val - = 120
