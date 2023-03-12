@@ -23,31 +23,9 @@ let initial_program =
     Def [ ("iv", ILit 4) ];
   ]
 
-(* TODO:
-   When type inference of variable definitions becomes possible,
-   there is no need to declare types explicitly. *)
-let initial_tyenv =
-  let open Syntax in
-  List.fold_left
-    (fun tyenv (id, ty) -> Environment.extend id ty tyenv)
-    Environment.empty
-    [
-      ("x", TyInt);
-      ("v", TyInt);
-      ("i", TyInt);
-      ("ii", TyInt);
-      ("iii", TyInt);
-      ("iv", TyInt);
-      ("+", TyFun (TyInt, TyFun (TyInt, TyInt)));
-      ("*", TyFun (TyInt, TyFun (TyInt, TyInt)));
-      ("=", TyFun (TyInt, TyFun (TyInt, TyBool)));
-      ("<", TyFun (TyInt, TyFun (TyInt, TyBool)));
-      ("&&", TyFun (TyBool, TyFun (TyBool, TyBool)));
-      ("||", TyFun (TyBool, TyFun (TyBool, TyBool)));
-    ]
-
 let read_eval_print () =
-  let env =
-    MyStdlib.program @ initial_program |> Eval.eval_program Environment.empty
+  let _, env, tyenv =
+    MyStdlib.program @ initial_program
+    |> Run.run_program Environment.empty Environment.empty
   in
-  read_eval_print' env initial_tyenv
+  read_eval_print' env tyenv
