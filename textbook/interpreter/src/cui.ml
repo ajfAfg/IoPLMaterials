@@ -38,6 +38,12 @@ let initial_tyenv =
       ("ii", TyInt);
       ("iii", TyInt);
       ("iv", TyInt);
+      ("+", TyFun (TyInt, TyFun (TyInt, TyInt)));
+      ("*", TyFun (TyInt, TyFun (TyInt, TyInt)));
+      ("=", TyFun (TyInt, TyFun (TyInt, TyBool)));
+      ("<", TyFun (TyInt, TyFun (TyInt, TyBool)));
+      ("&&", TyFun (TyBool, TyFun (TyBool, TyBool)));
+      ("||", TyFun (TyBool, TyFun (TyBool, TyBool)));
     ]
 
 let read_eval_print () =
