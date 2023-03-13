@@ -13,10 +13,11 @@ Exercise 3.4.3
   val - : int = 3
   val - : int = 3
 
+NOTE: This program cannot be typed in OCaml's type system, so it is only tested with `evalTest.ml`.
 Exercise 3.4.4
-  $ dune exec miniml exercise3-4-4.miniml.ml
-  val - = 12
-  val - = 24
+$ dune exec miniml exercise3-4-4.miniml.ml
+val - = 12
+val - = 24
 
 Exercise 3.4.5
   $ dune exec miniml exercise3-4-5.miniml.ml

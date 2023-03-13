@@ -84,20 +84,11 @@ let rec eval_exp env = function
           eval_exp newenv body
       | _ -> err "Non-function value is applied")
 
-let raise_if_id_duplicates ids =
-  let ids' = List.sort_uniq compare ids in
-  match MyList.subtract ids ids' with
-  | [] -> ()
-  | id :: _ ->
-      err
-      @@ Printf.sprintf "Variable %s is bound several times in this matching" id
-
 let eval_item env = function
   | Exp e ->
       let v = eval_exp env e in
       (Some v, env)
   | Def bindings ->
-      bindings |> List.map (fun (id, _) -> id) |> raise_if_id_duplicates;
       let bounds = bindings |> List.map (fun (id, e) -> (id, eval_exp env e)) in
       let newenv =
         List.fold_left
@@ -106,7 +97,6 @@ let eval_item env = function
       in
       (None, newenv)
   | RecDef bindings ->
-      bindings |> List.map (fun (id, _, _) -> id) |> raise_if_id_duplicates;
       let dummyenv = ref Environment.empty in
       let bounds =
         bindings

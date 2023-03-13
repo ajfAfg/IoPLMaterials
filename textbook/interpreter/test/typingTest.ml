@@ -108,6 +108,34 @@ let () =
                       (AppExp
                          (FunExp ("x", BinOp (Plus, Var "x", ILit 1)), ILit 2))));
         ] );
+      ( "ty_item",
+        let check = check ty "" in
+        [
+          test_case "Types of recursive definitions can be inferred" `Quick
+            (fun () ->
+              let _, tyenv =
+                Typing.ty_item Environment.empty
+                @@ RecDef
+                     [
+                       ( "even",
+                         "n",
+                         IfExp
+                           ( BinOp (Eq, Var "n", ILit 0),
+                             BLit true,
+                             AppExp (Var "odd", BinOp (Plus, Var "n", ILit ~-1))
+                           ) );
+                       ( "odd",
+                         "n",
+                         IfExp
+                           ( BinOp (Eq, Var "n", ILit 0),
+                             BLit false,
+                             AppExp (Var "even", BinOp (Plus, Var "n", ILit ~-1))
+                           ) );
+                     ]
+              in
+              check (TyFun (TyInt, TyBool)) @@ Environment.lookup "even" tyenv;
+              check (TyFun (TyInt, TyBool)) @@ Environment.lookup "odd" tyenv);
+        ] );
       ( "fresh_tyvar",
         let check = check int "" in
         [
@@ -145,5 +173,37 @@ let () =
               @@ Typing.subst_type
                    [ (beta, TyBool); (gamma, TyFun (TyVar beta, TyInt)) ]
                    (TyVar gamma));
+        ] );
+      (* NOTE:
+         The constraint that "variables with the same name cannot be defined at the same time"
+         is a cross-cutting concern for `ty_item` and `ty_exp`,
+         so they are tested in the same test suite. *)
+      ( "Multiply_bound_variable",
+        let test_if_the_expected_exception_is_raised title f =
+          test_case
+            (title
+           ^ ": Variables cannot be bound several times in the same matching")
+            `Quick (fun () ->
+              try
+                ignore @@ f ();
+                fail "No exception"
+              with
+              | Typing.Error (Multiply_bound_variable _) -> ignore pass
+              | _ -> fail "Unexpected exception")
+        in
+        [
+          ( test_if_the_expected_exception_is_raised "Def" @@ fun () ->
+            Typing.ty_item Environment.empty
+              (Def [ ("x", ILit 1); ("x", ILit 2) ]) );
+          ( test_if_the_expected_exception_is_raised "RecDef" @@ fun () ->
+            Typing.ty_item Environment.empty
+              (RecDef [ ("x", "y", ILit 1); ("x", "y", ILit 2) ]) );
+          ( test_if_the_expected_exception_is_raised "LetExp" @@ fun () ->
+            Typing.ty_exp Environment.empty
+              (LetExp ([ ("x", ILit 1); ("x", ILit 2) ], ILit 1)) );
+          ( test_if_the_expected_exception_is_raised "LetRecExp" @@ fun () ->
+            Typing.ty_exp Environment.empty
+              (LetRecExp ([ ("x", "y", ILit 1); ("x", "y", ILit 2) ], ILit 1))
+          );
         ] );
     ]

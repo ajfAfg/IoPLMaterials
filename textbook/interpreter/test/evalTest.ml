@@ -145,6 +145,70 @@ let () =
                         ],
                         AppExp (Var "f", ILit 4) )));
           test_case
+            "Even untypeable expressions may be able to evaluate (c.f. \
+             Exercise 3.4.4)"
+            `Quick (fun () ->
+              check (Eval.IntV 12)
+              @@ Eval.eval_exp Environment.empty
+                   (LetExp
+                      ( [
+                          ( "makemult",
+                            FunExp
+                              ( "maker",
+                                FunExp
+                                  ( "x",
+                                    IfExp
+                                      ( BinOp (Lt, Var "x", ILit 1),
+                                        ILit 0,
+                                        BinOp
+                                          ( Plus,
+                                            ILit 4,
+                                            AppExp
+                                              ( AppExp (Var "maker", Var "maker"),
+                                                BinOp (Plus, Var "x", ILit ~-1)
+                                              ) ) ) ) ) );
+                        ],
+                        LetExp
+                          ( [
+                              ( "times4",
+                                FunExp
+                                  ( "x",
+                                    AppExp
+                                      ( AppExp (Var "makemult", Var "makemult"),
+                                        Var "x" ) ) );
+                            ],
+                            AppExp (Var "times4", ILit 3) ) ));
+              check (Eval.IntV 24)
+              @@ Eval.eval_exp Environment.empty
+                   (LetExp
+                      ( [
+                          ( "makefact",
+                            FunExp
+                              ( "maker",
+                                FunExp
+                                  ( "x",
+                                    IfExp
+                                      ( BinOp (Lt, Var "x", ILit 1),
+                                        ILit 1,
+                                        BinOp
+                                          ( Mult,
+                                            Var "x",
+                                            AppExp
+                                              ( AppExp (Var "maker", Var "maker"),
+                                                BinOp (Plus, Var "x", ILit ~-1)
+                                              ) ) ) ) ) );
+                        ],
+                        LetExp
+                          ( [
+                              ( "fact",
+                                FunExp
+                                  ( "x",
+                                    AppExp
+                                      ( AppExp (Var "makefact", Var "makefact"),
+                                        Var "x" ) ) );
+                            ],
+                            AppExp (Var "fact", ILit 4) ) )));
+          test_case
             "Support functions that perform dynamic binding (c.f. Exercise \
              3.4.5)"
             `Quick (fun () ->
@@ -208,20 +272,6 @@ let () =
                               ) );
                         ],
                         AppExp (Var "even", ILit 2) )));
-        ] );
-      ( "eval_item",
-        [
-          test_case
-            "Variables cannot be bound several times in the same matching"
-            `Quick (fun () ->
-              try
-                ignore
-                @@ Eval.eval_item Environment.empty
-                     (Def [ ("x", ILit 1); ("x", ILit 2) ]);
-                fail "No exception"
-              with
-              | Eval.Error _ -> ignore pass
-              | _ -> fail "Unexpected exception");
         ] );
       ( "eval_program",
         let check_environment = check environment "" in
