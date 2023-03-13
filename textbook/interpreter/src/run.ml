@@ -8,7 +8,9 @@ let run_program env tyenv program =
     (fun (results, env, tyenv) item ->
       let ty, tyenv' =
         (* TODO: Unimplemented expression types are represented by `Dummy`. *)
-        try Typing.ty_item tyenv item with _ -> (Some Dummy, tyenv)
+        try Typing.ty_item tyenv item with
+        | Typing.Error Not_implemented -> (Some Dummy, tyenv)
+        | Typing.Error error -> failwith @@ Typing.string_of_error error
       in
       let v, env' = Eval.eval_item env item in
       let ids = extract_variable_names_to_be_defined item in
@@ -21,7 +23,10 @@ let run_program env tyenv program =
                 ( id,
                   Environment.lookup id env',
                   (* TODO: Unimplemented expression types are represented by `Dummy`. *)
-                  try Environment.lookup id tyenv' with _ -> Dummy ))
+                  try Environment.lookup id tyenv' with
+                  | Typing.Error Not_implemented -> Dummy
+                  | Typing.Error error ->
+                      failwith @@ Typing.string_of_error error ))
               ids
       in
       (List.append results results', env', tyenv'))
