@@ -1,11 +1,24 @@
 open Syntax
 
-exception Error of string
+type error =
+  | Expr_type_clash
+  | Multiply_bound_variable of id
+  | Unbound_value of id
+  | Not_implemented
 
-let err s = raise (Error s)
+exception Error of error
+
+let err error = raise (Error error)
 
 type tyenv = ty Environment.t
 type subst = (tyvar * ty) list
+
+let string_of_error = function
+  | Expr_type_clash -> "Cannot infer a type"
+  | Multiply_bound_variable id ->
+      Printf.sprintf "Variable %s is bound several times in this matching" id
+  | Unbound_value id -> "Unbound value " ^ id
+  | Not_implemented -> "Not implemented!"
 
 let string_of_binop = function
   | Plus -> "+"
@@ -26,7 +39,7 @@ let rec string_of_ty = function
       Printf.sprintf "(%s) -> %s" (string_of_ty ty1) (string_of_ty ty2)
   | TyFun (ty1, ty2) ->
       Printf.sprintf "%s -> %s" (string_of_ty ty1) (string_of_ty ty2)
-  | _ -> err "Not Implemented!"
+  | _ -> err Not_implemented
 
 let fresh_tyvar =
   let counter = ref 0 in
@@ -59,7 +72,7 @@ let rec subst_type subst = function
       | Some b -> subst_type (List.tl subst) b
       | None -> TyVar tyvar)
   | TyFun (ty1, ty2) -> TyFun (subst_type subst ty1, subst_type subst ty2)
-  | _ -> err "Not Implemented!"
+  | _ -> err Not_implemented
 
 let eqs_of_subst subst = List.map (fun (tyvar, ty) -> (TyVar tyvar, ty)) subst
 let eqs_of_substs substs = substs |> List.map eqs_of_subst |> List.flatten
@@ -68,7 +81,7 @@ let subst_eqs subst eqs =
   List.map (fun (ty1, ty2) -> (subst_type subst ty1, subst_type subst ty2)) eqs
 
 let occur_check tyvar ty =
-  if MySet.member tyvar @@ freevar_ty ty then err "tyvar ∈ FTV(ty)"
+  if MySet.member tyvar @@ freevar_ty ty then err Expr_type_clash
 
 let rec unify = function
   | [] -> []
@@ -83,7 +96,13 @@ let rec unify = function
       | ty, TyVar tyvar ->
           occur_check tyvar ty;
           (unify @@ subst_eqs [ (tyvar, ty) ] eqs) @ [ (tyvar, ty) ]
-      | _ -> err "Cannot unify")
+      | _ -> err Expr_type_clash)
+
+let raise_if_id_duplicates ids =
+  let ids' = List.sort_uniq compare ids in
+  match MyList.subtract ids ids' with
+  | [] -> ()
+  | id :: _ -> err @@ Multiply_bound_variable id
 
 let ty_prim op ty1 ty2 =
   match op with
@@ -94,7 +113,7 @@ let ty_prim op ty1 ty2 =
 let rec ty_exp tyenv = function
   | Var x -> (
       try ([], Environment.lookup x tyenv)
-      with Environment.Not_bound -> err ("variable not bound: " ^ x))
+      with Environment.Not_bound -> err @@ Unbound_value x)
   | ILit _ -> ([], TyInt)
   | BLit _ -> ([], TyBool)
   | BinOp (op, exp1, exp2) ->
@@ -114,6 +133,7 @@ let rec ty_exp tyenv = function
       in
       (subst, subst_type subst ty2)
   | LetExp (bindings, exp2) ->
+      bindings |> List.map (fun (id, _) -> id) |> raise_if_id_duplicates;
       let id_subst_ty_list =
         List.map
           (fun (id, exp) ->
@@ -134,6 +154,11 @@ let rec ty_exp tyenv = function
       let subst2, ty2 = ty_exp tyenv' exp2 in
       let subst = unify @@ eqs_of_substs [ subst1; subst2 ] in
       (subst, subst_type subst ty2)
+  | LetRecExp (bindings, exp2) ->
+      let tyenv', eqs = ty_let_rec tyenv bindings in
+      let subst1, ty = ty_exp tyenv' exp2 in
+      let subst = unify @@ eqs_of_subst subst1 @ eqs in
+      (subst, subst_type subst ty)
   | FunExp (id, exp) ->
       let ty1 = TyVar (fresh_tyvar ()) in
       let subst, ty2 = ty_exp (Environment.extend id ty1 tyenv) exp in
@@ -146,13 +171,41 @@ let rec ty_exp tyenv = function
         unify @@ eqs_of_substs [ subst1; subst2 ] @ [ (ty12, TyFun (ty1, ty2)) ]
       in
       (subst, subst_type subst ty2)
-  | _ -> err "Not Implemented!"
+  | _ -> err Not_implemented
+
+and ty_let_rec tyenv bindings =
+  bindings |> List.map (fun (id, _, _) -> id) |> raise_if_id_duplicates;
+  let bindings_with_ty1_ty2 =
+    bindings
+    |> List.map (fun (id, para, exp) ->
+           let ty1 = TyVar (fresh_tyvar ()) in
+           let ty2 = TyVar (fresh_tyvar ()) in
+           (id, para, exp, ty1, ty2))
+  in
+  let tyenv' =
+    bindings_with_ty1_ty2
+    |> List.map (fun (id, _para, _exp, ty1, ty2) -> (id, TyFun (ty1, ty2)))
+    |> List.fold_left
+         (fun tyenv' (id, ty) -> Environment.extend id ty tyenv')
+         tyenv
+  in
+  let subst, eqs =
+    bindings_with_ty1_ty2
+    |> List.map (fun (_id, para, exp, ty1, ty2) ->
+           (ty_exp (Environment.extend para ty1 tyenv') exp, ty2))
+    |> List.fold_left
+         (fun (subst, eqs) ((subst', ty2'), ty2) ->
+           (subst @ subst', (ty2, ty2') :: eqs))
+         ([], [])
+  in
+  (tyenv', eqs_of_subst subst @ eqs)
 
 let ty_item tyenv = function
   | Exp e ->
       let subst, ty = ty_exp tyenv e in
       (Some ty, Environment.map (subst_type subst) tyenv)
   | Def bindings ->
+      bindings |> List.map (fun (id, _) -> id) |> raise_if_id_duplicates;
       let bound_types, subst =
         bindings
         |> List.map (fun (id, e) -> (id, ty_exp tyenv e))
@@ -167,4 +220,7 @@ let ty_item tyenv = function
           tyenv bound_types
       in
       (None, Environment.map (subst_type subst) tyenv')
-  | _ -> err "Not Implemented!"
+  | RecDef bindings ->
+      let tyenv', eqs = ty_let_rec tyenv bindings in
+      let subst = unify eqs in
+      (None, Environment.map (subst_type subst) tyenv')
