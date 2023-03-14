@@ -30,3 +30,7 @@ Exercise 3.4.6
   val - = 25
   val - = 120
   val - = 120
+
+Exercise 4.4.1
+  $ dune exec miniml exercise4-4-1.miniml.ml
+  val - : int = 2

@@ -12,3 +12,7 @@ Exercise 3.5.2
   val odd : int -> bool = <fun>
   val - : bool = true
   val - : bool = false
+
+Exercise 4.4.2
+  $ dune exec miniml exercise4-4-2.miniml.ml
+  val - : int = 2
