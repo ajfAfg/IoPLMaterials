@@ -7,7 +7,7 @@ let environment =
 
 let init_env variable_and_type =
   List.fold_left
-    (fun env (id, exval) -> Environment.extend id exval env)
+    (fun env (id, ty) -> Environment.extend id (Typing.tysc_of_ty ty) env)
     Environment.empty variable_and_type
 
 let () =
@@ -107,6 +107,47 @@ let () =
                    (Typing.ty_exp Environment.empty
                       (AppExp
                          (FunExp ("x", BinOp (Plus, Var "x", ILit 1)), ILit 2))));
+          test_case "Variables bound by `let` can have polymorphic types" `Quick
+            (fun () ->
+              check TyInt
+              @@ snd
+                   (Typing.ty_exp Environment.empty
+                      (LetExp
+                         ( [ ("f", FunExp ("x", Var "x")) ],
+                           IfExp
+                             ( AppExp (Var "f", BLit true),
+                               AppExp (Var "f", ILit 2),
+                               ILit 3 ) ))));
+          test_case "Variables bound by `let rec` can have polymorphic types"
+            `Quick (fun () ->
+              check TyInt
+              @@ snd
+                   (Typing.ty_exp Environment.empty
+                      (LetRecExp
+                         ( [ ("f", "x", Var "x") ],
+                           IfExp
+                             ( AppExp (Var "f", BLit true),
+                               AppExp (Var "f", ILit 2),
+                               ILit 3 ) ))));
+          test_case
+            "Only variables bound by `let` or `let rec` can have polymophic \
+             types"
+            `Quick (fun () ->
+              try
+                ignore
+                @@ Typing.ty_exp Environment.empty
+                     (AppExp
+                        ( FunExp
+                            ( "f",
+                              IfExp
+                                ( AppExp (Var "f", BLit true),
+                                  AppExp (Var "f", ILit 2),
+                                  ILit 3 ) ),
+                          FunExp ("x", Var "x") ));
+                fail "No exception"
+              with
+              | Typing.Error Typing.Expr_type_clash -> ignore pass
+              | _ -> fail "Unexpected exception");
         ] );
       ( "ty_item",
         let check = check ty "" in
@@ -133,8 +174,14 @@ let () =
                            ) );
                      ]
               in
-              check (TyFun (TyInt, TyBool)) @@ Environment.lookup "even" tyenv;
-              check (TyFun (TyInt, TyBool)) @@ Environment.lookup "odd" tyenv);
+              let ty_of_tysc = function
+                | Syntax.TyScheme ([], ty) -> ty
+                | _ -> fail "Shouldn't reach here"
+              in
+              check (TyFun (TyInt, TyBool))
+              @@ ty_of_tysc (Environment.lookup "even" tyenv);
+              check (TyFun (TyInt, TyBool))
+              @@ ty_of_tysc (Environment.lookup "odd" tyenv));
         ] );
       ( "fresh_tyvar",
         let check = check int "" in
