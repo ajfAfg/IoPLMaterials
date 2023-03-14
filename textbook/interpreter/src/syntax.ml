@@ -32,3 +32,5 @@ type ty =
   | TyList of ty
   | Dummy (* TODO: Type for an unimplemented expression *)
 [@@deriving show]
+
+type tysc = TyScheme of tyvar list * ty [@@deriving show]

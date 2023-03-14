@@ -23,7 +23,10 @@ let run_program env tyenv program =
                 ( id,
                   Environment.lookup id env',
                   (* TODO: Unimplemented expression types are represented by `Dummy`. *)
-                  try Environment.lookup id tyenv' with
+                  try
+                    let (TyScheme (_, ty)) = Environment.lookup id tyenv' in
+                    ty
+                  with
                   | Typing.Error Not_implemented -> Dummy
                   | Typing.Error error ->
                       failwith @@ Typing.string_of_error error ))
