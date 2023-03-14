@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  miniml:
+    build: .
+    volumes:
+      - .:/app
+    working_dir: /app
+    stdin_open: true
+    tty: true
